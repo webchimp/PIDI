@@ -14,10 +14,12 @@
 	class PIDI {
 
 		private $info;
+		private $file;
 
 		function __construct($file) {
 
 			$command = new Command("qpdf {$file} --json");
+			$this->file = $file;
 
 			// No file present
 			if(!file_exists($file)) {
@@ -84,6 +86,13 @@
 					'height' => ($rect[3] - $rect[1])*100/$page_height,
 				]
 			];
+		}
+
+		public function generatePageImages($name) {
+
+			$gs_exe = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'gswin64' : 'gs';
+			$command = new Command($gs_exe . ' -dNOPAUSE -dBATCH -sDEVICE=png16m -r600 -sOutputFile="' . $name . '-%d.png" ' . $this->file);
+			$command->execute();
 		}
 
 		public function getPages() {

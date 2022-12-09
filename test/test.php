@@ -1,6 +1,6 @@
 <?php
-	require('vendor/autoload.php');
-	require('src/PIDI.php');
+	require('../vendor/autoload.php');
+	require('../src/PIDI.php');
 
 	use Pidi\PIDI;
 
@@ -9,6 +9,9 @@
 
 	$pages = $pidi->getPages();
 	$fields = $pidi->getFormFields();
+
+	// Generate images from pdf
+	$pidi->generatePageImages('wax');
 ?>
 
 <!DOCTYPE html>
