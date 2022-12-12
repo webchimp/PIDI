@@ -90,7 +90,7 @@
 
 		public function generatePageImages($name) {
 
-			$gs_exe = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'gswin64' : 'gs';
+			$gs_exe = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'gswin64.exe' : 'gs';
 			$command = new Command($gs_exe . ' -dNOPAUSE -dBATCH -sDEVICE=png16m -r600 -sOutputFile="' . $name . '-%d.png" ' . $this->file);
 			$command->execute();
 		}
