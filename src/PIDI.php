@@ -47,6 +47,11 @@
 			if($field->istext) return 'text';
 		}
 
+		static function getFieldChoices($field) {
+
+			return isset($field->choices) ? $field->choices : [];
+		}
+
 		public function extractObjectPage($name) {
 
 			$obj_name = "obj:$name";
@@ -56,6 +61,15 @@
 		public function extractObjectCoordinate($name, $path = '/Rect') {
 
 			$obj_name = "obj:$name";
+
+			if(is_array($path)) {
+
+				foreach($path as $p) {
+
+					if(isset($this->info->qpdf[1]->{$obj_name}->value->{$p})) return $this->info->qpdf[1]->{$obj_name}->value->{$p};
+				}
+			}
+
 			return $this->info->qpdf[1]->{$obj_name}->value->{$path};
 		}
 
@@ -113,7 +127,7 @@
 
 				$the_page = new \stdClass();
 				$the_page->object = $page->object;
-				$the_page->info = $this->extractObjectCoordinate($page->object, '/ArtBox');
+				$the_page->info = $this->extractObjectCoordinate($page->object, ['/ArtBox', '/MediaBox']);
 
 				$pages[$page->object] = $the_page;
 			}
@@ -159,10 +173,15 @@
 
 					$the_field = new \stdClass();
 
-					$the_field->name = $field->alternativename;
-					$the_field->object = self::slugify($field->object);
+					$the_field->name = isset($field->fullname) ? $field->fullname : $field->alternativename;
+					$the_field->object = $field->object;
 					$the_field->page = $this->extractObjectPage($field->object);
 					$the_field->type = self::getFieldType($field);
+
+					if($the_field->type == 'choice') {
+						$the_field->choices = self::getFieldChoices($field);
+					}
+
 					$the_field->info = self::extractFormFieldInfo($the_field->object);
 
 					$fields[] = $the_field;
