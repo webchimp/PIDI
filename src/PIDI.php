@@ -72,26 +72,36 @@
 
 			$rect = $this->extractObjectCoordinate($name, $path);
 
+			$width = $rect[2] - $rect[0];
+			$height = $rect[3] - $rect[1];
+			$x = $rect[0];
+			$y = $page_height - $rect[1] - $height;
+
 			return [
 				'absolute' => [
-					'x' => $rect[0],
-					'y' => $rect[1],
-					'width' => $rect[2] - $rect[0],
-					'height' => $rect[3] - $rect[1],
+					'x' => $x,
+					'y' => $y,
+					'width' => $width,
+					'height' => $height,
 				],
 				'relative' => [
 					'x' => $rect[0]*100/$page_width,
-					'y' => $rect[1]*100/$page_height,
+					'y' => $y*100/$page_height,
 					'width' => ($rect[2] - $rect[0])*100/$page_width,
 					'height' => ($rect[3] - $rect[1])*100/$page_height,
 				]
 			];
 		}
 
-		public function generatePageImages($name) {
+		public function generatePageImages($name = '') {
+
+			$path_parts = pathinfo($this->file);
+
+			$dir = dirname($this->file);
+			$file_name = $name ?: $path_parts['filename'];
 
 			$gs_exe = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'gswin64.exe' : 'gs';
-			$command = new Command($gs_exe . ' -dNOPAUSE -dBATCH -sDEVICE=png16m -r600 -sOutputFile="' . $name . '-%d.png" ' . $this->file);
+			$command = new Command($gs_exe . ' -dNOPAUSE -dBATCH -sDEVICE=png16m -r600 -sOutputFile="' . $dir . '/' . $file_name . '-%d.png" ' . $this->file);
 			$command->execute();
 		}
 
@@ -111,6 +121,32 @@
 			return $pages;
 		}
 
+		public static function slugify($text, string $divider = '-') {
+			// replace non letter or digits by divider
+			$text = preg_replace('~[^\pL\d]+~u', $divider, $text);
+
+			// transliterate
+			$text = iconv('utf-8', 'us-ascii//TRANSLIT', $text);
+
+			// remove unwanted characters
+			$text = preg_replace('~[^-\w]+~', '', $text);
+
+			// trim
+			$text = trim($text, $divider);
+
+			// remove duplicate divider
+			$text = preg_replace('~-+~', $divider, $text);
+
+			// lowercase
+			$text = strtolower($text);
+
+			if (empty($text)) {
+				return 'n-a';
+			}
+
+			return $text;
+		}
+
 		public function getFormFields() {
 
 			// Check for acroform fields
@@ -124,11 +160,10 @@
 					$the_field = new \stdClass();
 
 					$the_field->name = $field->alternativename;
-					$the_field->object = $field->object;
+					$the_field->object = self::slugify($field->object);
 					$the_field->page = $this->extractObjectPage($field->object);
 					$the_field->type = self::getFieldType($field);
 					$the_field->info = self::extractFormFieldInfo($the_field->object);
-
 
 					$fields[] = $the_field;
 
