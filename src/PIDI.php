@@ -16,6 +16,9 @@
 		private $info;
 		private $file;
 
+		/**
+		 * @throws \Exception
+		 */
 		function __construct($file) {
 
 			$command = new Command("qpdf {$file} --json");
@@ -25,13 +28,11 @@
 			if(!file_exists($file)) {
 
 				throw new \Exception("PIDI Error: File {$file} not found");
-				return [];
 			}
 
 			// Not executable
 			if (!$command->execute()) {
 				throw new \Exception('PIDI Error: ' . $command->getError());
-				return [];
 			}
 
 			$this->info = json_decode($command->getOutput());
@@ -49,7 +50,7 @@
 
 		static function getFieldChoices($field) {
 
-			return isset($field->choices) ? $field->choices : [];
+			return $field->choices ?? [];
 		}
 
 		public function extractObjectPage($name) {
@@ -73,12 +74,12 @@
 			return $this->info->qpdf[1]->{$obj_name}->value->{$path};
 		}
 
-		public function extractPageSize($name) {
+		public function extractPageSize($name): array {
 
 			return [$this->pages[$name]->info[2], $this->pages[$name]->info[3]];
 		}
 
-		public function extractFormFieldInfo($name, $path = '/Rect') {
+		public function extractFormFieldInfo($name, $path = '/Rect'): array {
 
 			$obj_name = "obj:$name";
 
@@ -109,17 +110,22 @@
 
 		public function generatePageImages($name = '') {
 
-			$path_parts = pathinfo($this->file);
+			static::generateImagesFromPages($this->file);
+		}
 
-			$dir = dirname($this->file);
+		public static function generateImagesFromPages($file, $name = '') {
+
+			$path_parts = pathinfo($file);
+
+			$dir = dirname($file);
 			$file_name = $name ?: $path_parts['filename'];
 
 			$gs_exe = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'gswin64.exe' : 'gs';
-			$command = new Command($gs_exe . ' -dNOPAUSE -dBATCH -sDEVICE=png16m -r600 -sOutputFile="' . $dir . '/' . $file_name . '-%d.png" ' . $this->file);
+			$command = new Command($gs_exe . ' -dNOPAUSE -dBATCH -sDEVICE=png16m -r600 -sOutputFile="' . $dir . '/' . $file_name . '-%d.png" ' . $file);
 			$command->execute();
 		}
 
-		public function getPages() {
+		public function getPages(): array {
 
 			$pages = [];
 
@@ -135,7 +141,7 @@
 			return $pages;
 		}
 
-		public static function slugify($text, string $divider = '-') {
+		public static function slugify($text, string $divider = '-'): string {
 			// replace non letter or digits by divider
 			$text = preg_replace('~[^\pL\d]+~u', $divider, $text);
 
@@ -161,7 +167,7 @@
 			return $text;
 		}
 
-		public function getFormFields() {
+		public function getFormFields(): array {
 
 			// Check for acroform fields
 
